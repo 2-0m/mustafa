@@ -8,7 +8,14 @@ from fastapi.responses import JSONResponse
 import os
 import shutil
 app = FastAPI()
-
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+  CORSMiddleware,
+  allow_origins=["*"],  # يسمح بالوصول من أي مصدر. قم بتقييد هذا في الإنتاج
+  allow_credentials=True,
+  allow_methods=["*"],
+  allow_headers=["*"],
+)
 # تحميل النموذج
 model_path = 'porn_detector_model.h5'
 model = load_model(model_path)
