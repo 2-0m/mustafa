@@ -1,4 +1,5 @@
 tensorflow
-flask
+fastapi
 numpy
 Pillow
+shutil
