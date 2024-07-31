@@ -1,12 +1,14 @@
+
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import numpy as np
-from flask import Flask, request, jsonify
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import JSONResponse
 import os
-import flask_cors
-app = Flask(__name__)
-flask_cors.CORS(app)
+import shutil
+app = FastAPI()
+
 # تحميل النموذج
 model_path = 'porn_detector_model.h5'
 model = load_model(model_path)
@@ -22,18 +24,13 @@ def predict_image(file_path):
     result = 'pornographic' if prediction > 0.5 else 'non-pornographic'
     return result
 
-@app.route('/predict', methods=['POST'])
-def predict_pornographic_content():
+@app.post("/predict")
+async def predict_pornographic_content(file: UploadFile = File(...)):
     try:
-        # تحقق من وجود ملف مرفوع
-        if 'file' not in request.files:
-            return jsonify({"error": "No file provided"}), 400
-        
-        file = request.files['file']
-
         # حفظ الملف المرفوع مؤقتاً
         file_path = f"temp_{file.filename}"
-        file.save(file_path)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
         # توقع محتوى الصورة
         result = predict_image(file_path)
@@ -41,9 +38,10 @@ def predict_pornographic_content():
         # إزالة الصورة بعد التوقع
         os.remove(file_path)
 
-        return jsonify({"result": result})
+        return JSONResponse(content={"result": result})
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
